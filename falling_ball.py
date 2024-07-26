@@ -2,21 +2,26 @@ import pygame
 import random
 
 # Constants
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 1080
+SCREEN_HEIGHT = 1920
 BALL_RADIUS = 20
 GRAVITY = 0.5
 FRICTION = 0.99
 ELASTICITY = 0.8
-BALL_COLOR = (255, 255, 255)
 BG_COLOR = (0, 0, 0)
+BALL_SPAWN_RATE = 10  # Number of frames between spawning new balls
+
+# Random color generator
+def random_color():
+    return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
 class Ball:
-    def __init__(self, x, y, vx, vy):
+    def __init__(self, x, y, vx, vy, color):
         self.x = x
         self.y = y
         self.vx = vx
         self.vy = vy
+        self.color = color
 
     def update(self):
         self.vy += GRAVITY  # Apply gravity
@@ -38,7 +43,7 @@ class Ball:
             self.vx = -self.vx * ELASTICITY
 
     def draw(self, screen):
-        pygame.draw.circle(screen, BALL_COLOR, (int(self.x), int(self.y)), BALL_RADIUS)
+        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), BALL_RADIUS)
 
 def main():
     pygame.init()
@@ -46,10 +51,8 @@ def main():
     pygame.display.set_caption("Bouncing Balls")
     clock = pygame.time.Clock()
 
-    balls = [Ball(random.randint(BALL_RADIUS, SCREEN_WIDTH - BALL_RADIUS),
-                  random.randint(-SCREEN_HEIGHT, -BALL_RADIUS),
-                  random.uniform(-5, 5),
-                  random.uniform(-5, 5)) for _ in range(10)]
+    balls = []
+    frame_count = 0
 
     running = True
     while running:
@@ -59,12 +62,24 @@ def main():
 
         screen.fill(BG_COLOR)
 
+        # Add new ball at regular intervals
+        if frame_count % BALL_SPAWN_RATE == 0:
+            new_ball = Ball(
+                random.randint(BALL_RADIUS, SCREEN_WIDTH - BALL_RADIUS),
+                random.randint(-SCREEN_HEIGHT, -BALL_RADIUS),
+                random.uniform(-5, 5),
+                random.uniform(-5, 5),
+                random_color()
+            )
+            balls.append(new_ball)
+
         for ball in balls:
             ball.update()
             ball.draw(screen)
 
         pygame.display.flip()
         clock.tick(60)
+        frame_count += 1
 
     pygame.quit()
 
