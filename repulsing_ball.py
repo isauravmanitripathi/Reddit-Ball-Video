@@ -79,7 +79,7 @@ def get_audio_duration(audio_path):
 
 def main(audio_path):
     pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.HIDDEN)
     pygame.display.set_caption("Repulsing Balls Animation")
 
     clock = pygame.time.Clock()

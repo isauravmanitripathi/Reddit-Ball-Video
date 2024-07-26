@@ -16,11 +16,9 @@ SPIRAL_TIGHTNESS = 0.1
 BG_COLOR = (0, 0, 0)
 FPS = 30  # Frames per second for the video
 
-
 # Random color generator
 def random_color():
     return (random.randint(100, 255), random.randint(100, 255), random.randint(100, 255))
-
 
 class Star:
     def __init__(self, angle, distance, color):
@@ -39,7 +37,6 @@ class Star:
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), STAR_RADIUS)
 
-
 def get_audio_duration(audio_path):
     result = subprocess.run(
         ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1",
@@ -49,10 +46,9 @@ def get_audio_duration(audio_path):
     )
     return float(result.stdout)
 
-
 def main(audio_path):
     pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.HIDDEN)
     pygame.display.set_caption("Spiral Galaxy Animation")
     clock = pygame.time.Clock()
 
@@ -99,7 +95,6 @@ def main(audio_path):
         final_clip.write_videofile("spiral_galaxy_with_audio.mp4", codec="libx264", audio_codec="aac")
     except Exception as e:
         print(f"Error loading audio file: {e}")
-
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

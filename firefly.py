@@ -56,7 +56,7 @@ def get_audio_duration(audio_path):
 
 def main(audio_path):
     pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.HIDDEN)
     pygame.display.set_caption("Firefly Animation")
     clock = pygame.time.Clock()
 
@@ -105,7 +105,6 @@ def main(audio_path):
         final_clip.write_videofile("firefly_animation_with_audio.mp4", codec="libx264", audio_codec="aac")
     except Exception as e:
         print(f"Error loading audio file: {e}")
-
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

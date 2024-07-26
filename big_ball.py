@@ -101,7 +101,7 @@ class Maze:
 
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.HIDDEN)
     pygame.display.set_caption("Maze Generator and Solver")
 
     maze = Maze((SCREEN_WIDTH, SCREEN_HEIGHT))

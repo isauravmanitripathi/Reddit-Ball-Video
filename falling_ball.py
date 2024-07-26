@@ -16,11 +16,9 @@ BG_COLOR = (0, 0, 0)
 BALL_SPAWN_RATE = 10  # Number of frames between spawning new balls
 FPS = 60  # Frames per second for the video
 
-
 # Random color generator
 def random_color():
     return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-
 
 class Ball:
     def __init__(self, x, y, vx, vy, color):
@@ -52,7 +50,6 @@ class Ball:
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), BALL_RADIUS)
 
-
 def get_audio_duration(audio_path):
     result = subprocess.run(
         ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1",
@@ -62,10 +59,9 @@ def get_audio_duration(audio_path):
     )
     return float(result.stdout)
 
-
 def main(audio_path):
     pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.HIDDEN)
     pygame.display.set_caption("Bouncing Balls")
     clock = pygame.time.Clock()
 
@@ -121,7 +117,6 @@ def main(audio_path):
         final_clip.write_videofile("bouncing_balls_with_audio.mp4", codec="libx264", audio_codec="aac")
     except Exception as e:
         print(f"Error loading audio file: {e}")
-
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
