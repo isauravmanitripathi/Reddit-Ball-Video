@@ -1,128 +1,136 @@
 import pygame
-import random
-import math
-import time
-import subprocess
-from moviepy.editor import ImageSequenceClip, AudioFileClip
-import sys
+from random import choice
+from collections import deque
 
 # Constants
-SCREEN_WIDTH = 1080  # Resolution for Instagram Reels or YouTube Shorts
-SCREEN_HEIGHT = 1920
-INITIAL_BALL_RADIUS = 10  # Initial ball radius
-RADIUS_INCREMENT = 4  # Amount by which the ball's radius increases on each bounce
-MAX_BALL_RADIUS = 200  # Maximum ball radius
-FPS = 60  # Frames per second for the video
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 800
+CELL_SIZE = 16  # Size of each cell in the maze
+BALL_RADIUS = 8  # Radius of the ball
 
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
 
-class Ball:
-    def __init__(self, x, y, vx, vy, radius, color):
-        self.position = pygame.math.Vector2(x, y)
-        self.velocity = pygame.math.Vector2(vx, vy)
-        self.radius = radius
-        self.color = color
+class Cell(pygame.sprite.Sprite):
+    w, h = CELL_SIZE, CELL_SIZE
 
-    def update(self):
-        self.position += self.velocity
-        hit = False
-
-        if self.position.x - self.radius <= 0 or self.position.x + self.radius >= SCREEN_WIDTH:
-            self.velocity.x = -self.velocity.x
-            self.position.x = max(self.position.x, self.radius)
-            self.position.x = min(self.position.x, SCREEN_WIDTH - self.radius)
-            hit = True
-
-        if self.position.y - self.radius <= 0 or self.position.y + self.radius >= SCREEN_HEIGHT:
-            self.velocity.y = -self.velocity.y
-            self.position.y = max(self.position.y, self.radius)
-            self.position.y = min(self.position.y, SCREEN_HEIGHT - self.radius)
-            hit = True
-
-        if hit and self.radius < MAX_BALL_RADIUS:
-            self.radius = min(self.radius + RADIUS_INCREMENT, MAX_BALL_RADIUS)
-
-        return hit
-
-
-class MainState:
-    def __init__(self):
-        self.balls = [Ball(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 5, 7, INITIAL_BALL_RADIUS, pygame.Color('white'))]
-
-    def update(self):
-        for ball in self.balls:
-            ball.update()
+    def __init__(self, x, y, maze):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface([self.w, self.h])
+        self.image.fill(WHITE)
+        self.rect = self.image.get_rect()
+        self.rect.x = x * self.w
+        self.rect.y = y * self.h
+        self.x = x
+        self.y = y
+        self.maze = maze
+        self.nbs = [(x + nx, y + ny) for nx, ny in ((-2, 0), (0, -2), (2, 0), (0, 2))
+                    if 0 <= x + nx < maze.w and 0 <= y + ny < maze.h]
 
     def draw(self, screen):
-        screen.fill((0, 0, 0))
-        for ball in self.balls:
-            pygame.draw.circle(screen, ball.color, (int(ball.position.x), int(ball.position.y)), ball.radius)
+        screen.blit(self.image, self.rect)
 
+class Wall(Cell):
+    def __init__(self, x, y, maze):
+        super(Wall, self).__init__(x, y, maze)
+        self.image.fill(BLACK)
+        self.type = 0
 
-def get_audio_duration(audio_path):
-    result = subprocess.run(
-        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1",
-         audio_path],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT
-    )
-    return float(result.stdout)
+class Maze:
+    def __init__(self, size):
+        self.w, self.h = size[0] // Cell.w, size[1] // Cell.h
+        self.grid = [[Wall(x, y, self) for y in range(self.h)] for x in range(self.w)]
 
+    def get(self, x, y):
+        return self.grid[x][y]
 
-def main(audio_path):
+    def place_wall(self, x, y):
+        self.grid[x][y] = Wall(x, y, self)
+
+    def draw(self, screen):
+        for row in self.grid:
+            for cell in row:
+                cell.draw(screen)
+
+    def generate(self, screen=None, animate=False):
+        unvisited = [c for r in self.grid for c in r if c.x % 2 and c.y % 2]
+        cur = unvisited.pop()
+        stack = []
+
+        while unvisited:
+            try:
+                n = choice([c for c in map(lambda x: self.get(*x), cur.nbs) if c in unvisited])
+                stack.append(cur)
+                nx, ny = cur.x - (cur.x - n.x) // 2, cur.y - (cur.y - n.y) // 2
+                self.grid[nx][ny] = Cell(nx, ny, self)
+                self.grid[cur.x][cur.y] = Cell(cur.x, cur.y, self)
+                cur = n
+                unvisited.remove(n)
+
+                if animate:
+                    self.draw(screen)
+                    pygame.display.update()
+                    pygame.time.wait(10)
+            except IndexError:
+                if stack:
+                    cur = stack.pop()
+
+    def solve(self, start, end):
+        queue = deque([start])
+        visited = {start}
+        parent = {start: None}
+
+        while queue:
+            x, y = queue.popleft()
+            if (x, y) == end:
+                path = []
+                while (x, y) is not None:
+                    path.append((x, y))
+                    x, y = parent[(x, y)]
+                return path[::-1]
+
+            for nx, ny in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]:
+                if 0 <= nx < self.w and 0 <= ny < self.h and (nx, ny) not in visited and isinstance(self.grid[nx][ny], Cell):
+                    queue.append((nx, ny))
+                    visited.add((nx, ny))
+                    parent[(nx, ny)] = (x, y)
+
+        return []
+
+def main():
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Growing Ball Animation")
+    pygame.display.set_caption("Maze Generator and Solver")
 
-    clock = pygame.time.Clock()
-    state = MainState()
+    maze = Maze((SCREEN_WIDTH, SCREEN_HEIGHT))
+    maze.generate(screen=screen, animate=True)
 
-    # Get the audio duration
-    audio_duration = get_audio_duration(audio_path)
-    frames = []
+    start = (0, 0)
+    end = (maze.w - 1, maze.h - 1)
+    path = maze.solve(start, end)
+
     running = True
-    start_time = time.time()
+    ball_pos = 0
 
-    while running and (time.time() - start_time) < audio_duration:
+    while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-        state.update()
-        state.draw(screen)
+        screen.fill(WHITE)
+        maze.draw(screen)
 
-        # Capture the current frame
-        frame = pygame.surfarray.array3d(screen)
-        frame = frame.transpose([1, 0, 2])  # Convert from (width, height, colors) to (height, width, colors)
-        frames.append(frame)
+        if ball_pos < len(path):
+            x, y = path[ball_pos]
+            pygame.draw.circle(screen, RED, (x * CELL_SIZE + CELL_SIZE // 2, y * CELL_SIZE + CELL_SIZE // 2), BALL_RADIUS)
+            ball_pos += 1
 
-        clock.tick(FPS)
+        pygame.display.flip()
+        pygame.time.wait(100)  # Adjust the speed of the ball
 
     pygame.quit()
 
-    # Save the captured frames as a video file
-    clip = ImageSequenceClip(frames, fps=FPS)
-    audio_clip = AudioFileClip(audio_path)
-
-    # Ensure the audio clip duration matches the video clip duration
-    if audio_clip.duration > clip.duration:
-        audio_clip = audio_clip.subclip(0, clip.duration)
-
-    final_clip = clip.set_audio(audio_clip)
-    final_clip.write_videofile(
-        "growing_ball_with_audio.mp4",
-        codec="libx264",
-        audio_codec="aac",
-        bitrate="5000k",
-        preset="slow",
-        ffmpeg_params=["-crf", "18"],  # Use CRF 18 for high-quality encoding
-        threads=4  # Use multiple threads for faster encoding
-    )
-
-
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python big_ball.py <path_to_audio_file>")
-        sys.exit(1)
-
-    audio_path = sys.argv[1]
-    main(audio_path)
+    main()
